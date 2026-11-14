@@ -97,13 +97,14 @@ export function Hero({
             <CardTitle
               key={String(counted)}
               className={cn(
-                "animate-in leading-none font-black tracking-tighter whitespace-nowrap text-primary duration-500 fade-in slide-in-from-bottom-4",
+                "animate-in leading-none whitespace-nowrap text-primary drop-shadow-[0_6px_0_rgb(0_0_0/40%)] duration-500 fade-in slide-in-from-bottom-4",
                 !counted && "opacity-30",
               )}
               // Full size (8rem) while the number fits its column, smaller as it gains digits.
-              // A digit is about 0.62em wide in this font and a comma about 0.25em.
+              // A digit is about 0.5em wide in Anton and a comma about 0.22em; slanted like the page title.
               style={{
-                fontSize: `min(8rem, calc(100cqw / ${digits * 0.62 + commas * 0.25}))`,
+                fontSize: `min(9rem, calc(100cqw / ${digits * 0.5 + commas * 0.22 + 0.2}))`,
+                transform: "skewX(-8deg)",
               }}
             >
               {total}

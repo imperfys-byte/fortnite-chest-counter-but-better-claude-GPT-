@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Links } from "@/components/links";
+import { Links, SOURCE_URL } from "@/components/links";
 import { MatchesCard } from "@/components/matches-card";
 import { ProgressDialog } from "@/components/progress-dialog";
 import { ReplayPicker } from "@/components/replay-picker";
@@ -152,12 +152,31 @@ function App() {
 
   return (
     <div className="relative min-h-svh overflow-hidden">
+      {/* sky: purple glow at the top fading into deep blue, with faint diagonal light streaks */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,--theme(--color-foreground/4%)_1px,transparent_1px),linear-gradient(to_bottom,--theme(--color-foreground/4%)_1px,transparent_1px)] bg-[size:3rem_3rem]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_-10%,#6a35e0_0%,#2a1f9e_35%,transparent_70%),radial-gradient(ellipse_60%_50%_at_100%_100%,#0f4fb8_0%,transparent_60%),linear-gradient(180deg,#141a5e_0%,#0a1038_60%,#070b28_100%)]"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(115deg,rgb(255_255_255/3%)_0px,rgb(255_255_255/3%)_2px,transparent_2px,transparent_28px)]"
       />
 
       <main className="relative mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 lg:py-14">
+        <header className="flex flex-col items-start gap-3 pb-2 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="game-title text-6xl drop-shadow-[0_4px_0_rgb(0_0_0/45%)] sm:text-7xl">
+            <span className="text-primary">Chest</span>{" "}
+            <span className="text-white">Counter</span>
+          </h1>
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            <span className="game-title rounded-md bg-[var(--electric)] px-3 py-1.5 text-lg text-[#0a1038] shadow-[0_4px_0_rgb(0_0_0/35%)]">
+              Made by imperfy
+            </span>
+            <span className="text-sm text-muted-foreground">
+              Count every chest you opened, straight from your replays
+            </span>
+          </div>
+        </header>
         <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
           <Hero
             summary={summary}
@@ -181,7 +200,7 @@ function App() {
             />
             <Button
               size="lg"
-              className="h-12 text-base font-bold tracking-wide uppercase"
+              className="h-14 rounded-lg font-heading text-xl tracking-wide uppercase shadow-[0_5px_0_#b8860b] transition-transform hover:-translate-y-0.5 active:translate-y-1 active:shadow-[0_1px_0_#b8860b]"
               disabled={files.length === 0 || busy}
               onClick={countChests}
             >
@@ -204,10 +223,34 @@ function App() {
         />
 
         {/* bottom padding keeps the last line clear of the pinned links on a narrow screen */}
-        <footer className="pt-2 pb-8 text-center text-xs text-muted-foreground">
-          Fortnite Chest Counter is a fan-made tool. It is not affiliated with, endorsed
-          or sponsored by Epic Games. Fortnite is a trademark of Epic Games,
-          Inc.
+        <footer className="flex flex-col gap-1 pt-2 pb-8 text-center text-xs text-muted-foreground">
+          <p>
+            <span className="font-heading tracking-wide text-primary uppercase">
+              Made by imperfy
+            </span>{" "}
+            · based on{" "}
+            <a
+              href="https://github.com/Jose-AE/fortnite-chest-counter"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Fortnite Chest Counter by Jose-AE
+            </a>{" "}
+            (AGPL-3.0), with a fix so chests are not counted twice ·{" "}
+            <a
+              href={SOURCE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              source code
+            </a>
+          </p>
+          <p>
+            A fan-made tool. Not affiliated with, endorsed or sponsored by Epic
+            Games. Fortnite is a trademark of Epic Games, Inc.
+          </p>
         </footer>
       </main>
 
