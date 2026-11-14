@@ -24,7 +24,9 @@ class ChestReader : FortniteReplayReader.ReplayReader
 {
     public readonly Dictionary<uint, Player> Players = new(); // by player-state actor id
     public readonly List<LootEvent> Events = new();
-    readonly Dictionary<uint, ChestState> chests = new();     // by container actor id, so one that re-replicates is not counted again
+    // By the chest itself (see ChestKey), not by actor id: a chest that leaves view and comes back gets a new actor id,
+    // still marked searched by the same pawn, and keying by id counted it once per return (92 events for 58 chests in one match).
+    readonly Dictionary<string, ChestState> chests = new();
     readonly Dictionary<uint, uint> channelToActor = new(), pawnToState = new();
     readonly Dictionary<string, bool> isContainer = new();
     readonly HashSet<uint> freshChannels = new();
@@ -119,8 +121,7 @@ class ChestReader : FortniteReplayReader.ReplayReader
 
     void OnContainer(uint channelIndex, string cls, bool? searched, bool? destroyed, uint? pawn)
     {
-        // shortcut: falls back to the channel index when the actor id is unknown, could double count; fix if totals look inflated
-        var key = channelToActor.TryGetValue(channelIndex, out var actorId) ? actorId : 0x80000000 | channelIndex;
+        var key = ChestKey(channelIndex);
         var name = cls[(cls.LastIndexOf('.') + 1)..];
         if (!chests.TryGetValue(key, out var chest)) chests[key] = chest = new ChestState();
         var opened = freshChannels.Remove(channelIndex);
@@ -156,6 +157,29 @@ class ChestReader : FortniteReplayReader.ReplayReader
         if (debug && (searched != null || destroyed != null || pawn != null))
             log.AppendLine($"{time,9:F1} {(opened ? "NEW" : "   ")} {key,10} {name,-32} searched={B(searched)} destroyed={B(destroyed)} pawn={pawn?.ToString() ?? "-"} -> {Who(pawn)}"
                 + (made == null ? "" : $"   ==> {(made.Destroyed ? "DESTROYED" : "OPENED")} by {Tag(made.Opener)}"));
+    }
+
+    // What stays the same for one chest across the match, whatever actor id it arrives under:
+    // - chests placed in the map are static actors with a unique path name (..._UAID_...), the same each time they replicate;
+    // - spawned ones (buried chests) have no path, but they stay put, so their spawn location identifies them. It is sent
+    //   about a metre differently each time, so it matches a chest already seen within SameChestCm rather than exactly;
+    // - otherwise the actor id, and last the channel, which may still count a chest twice.
+    const double SameChestCm = 300;
+    readonly List<(FVector At, string Key)> placed = new();
+
+    string ChestKey(uint channelIndex)
+    {
+        if (!channelToActor.TryGetValue(channelIndex, out var actorId)) return "channel:" + channelIndex;
+        if (_netGuidCache.NetGuidToPathName.TryGetValue(actorId, out var path) && !string.IsNullOrEmpty(path)) return "path:" + path;
+        if (Channels[channelIndex]?.Actor?.Location is not { } at) return "id:" + actorId;
+        foreach (var (seen, key) in placed)
+        {
+            double dx = seen.X - at.X, dy = seen.Y - at.Y, dz = seen.Z - at.Z;
+            if (dx * dx + dy * dy + dz * dz <= SameChestCm * SameChestCm) return key;
+        }
+        var made = $"at:{at.X / 100:F0},{at.Y / 100:F0},{at.Z / 100:F0}";
+        placed.Add((at, made));
+        return made;
     }
 
     Player PlayerOfPawn(uint pawnId) => pawnToState.TryGetValue(pawnId, out var s) && Players.TryGetValue(s, out var p) ? p : null;
