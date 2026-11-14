@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatNumber } from "@/lib/format";
 import type { ChartBar, ChartGroup } from "@/lib/stats";
 import { cn } from "@/lib/utils";
@@ -106,8 +107,10 @@ export function MatchesChart({
               <div
                 key={i}
                 onPointerEnter={(e) => {
-                  const box = e.currentTarget.getBoundingClientRect();
-                  setTip({ index: i, x: box.left + box.width / 2, y: box.top });
+                  // anchor to the bar itself, not the full-height column, so the box sits right above what you hover
+                  const column = e.currentTarget.getBoundingClientRect();
+                  const bar = e.currentTarget.firstElementChild?.getBoundingClientRect() ?? column;
+                  setTip({ index: i, x: column.left + column.width / 2, y: bar.top });
                 }}
                 onPointerLeave={() => setTip(undefined)}
                 className={cn(
@@ -153,12 +156,17 @@ export function MatchesChart({
         </div>
       </div>
 
-      {active && (
+      {/* Rendered into <body>: a card's backdrop-filter makes `fixed` children position against the card instead of the window. */}
+      {active && createPortal(
         <div
-          className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full border bg-popover px-3 py-2 text-xs whitespace-nowrap shadow-lg"
+          className={cn(
+            "pointer-events-none fixed z-50 -translate-x-1/2 rounded-md border bg-popover px-3 py-2 text-xs whitespace-nowrap shadow-lg",
+            // flip below the bar's top when there is no room above it
+            tip.y > 110 ? "-translate-y-full" : "translate-y-0",
+          )}
           style={{
             left: Math.min(Math.max(tip.x, 120), window.innerWidth - 120),
-            top: tip.y - 8,
+            top: tip.y > 110 ? tip.y - 8 : tip.y + 8,
           }}
         >
           <div className="mb-1 text-muted-foreground">{active.title}</div>
@@ -179,7 +187,8 @@ export function MatchesChart({
             </div>
           )}
           <div className="mt-1 text-muted-foreground">{active.note}</div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
